@@ -20,7 +20,8 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" className={`${grotesk.variable} ${orbitron.variable} ${jetbrains.variable}`}>
-      <body>{children}</body>
+      {/* Extensões (ex.: ColorZilla) injetam atributos no <body> antes do React. */}
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }

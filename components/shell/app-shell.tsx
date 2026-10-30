@@ -4,7 +4,7 @@ import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createContext, use, useEffect, useState } from "react";
+import { createContext, Suspense, use, useEffect, useState } from "react";
 
 import { NyxLogo } from "@/components/brand/nyx-logo";
 import { cn } from "@/lib/utils";
@@ -31,8 +31,6 @@ export function AppShell({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const pathname = usePathname();
-
   useEffect(() => {
     try {
       // Preferência salva só existe no navegador; ler após montar evita
@@ -43,10 +41,6 @@ export function AppShell({
       /* armazenamento bloqueado: segue expandida */
     }
   }, []);
-
-  // Fecha a gaveta ao navegar.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => setMobileOpen(false), [pathname]);
 
   const toggle = () => {
     setCollapsed((c) => {
@@ -62,6 +56,9 @@ export function AppShell({
   return (
     <ShellContext value={{ collapsed }}>
       <div className="nyx-sky" aria-hidden />
+      <Suspense fallback={null}>
+        <OnNavigate onChange={() => setMobileOpen(false)} />
+      </Suspense>
       <div className="flex min-h-dvh">
         {/* Desktop */}
         <motion.aside
@@ -96,7 +93,7 @@ export function AppShell({
               </button>
             )}
 
-            <NavList pathname={pathname} collapsed={collapsed} />
+            <NavList collapsed={collapsed} />
 
             <div className="border-t border-glass-border p-3">{userSlot}</div>
           </div>
@@ -149,7 +146,7 @@ export function AppShell({
                       <X className="size-5" />
                     </button>
                   </div>
-                  <NavList pathname={pathname} collapsed={false} />
+                  <NavList collapsed={false} />
                   <div className="border-t border-glass-border p-3">{userSlot}</div>
                 </div>
               </motion.aside>
@@ -163,7 +160,32 @@ export function AppShell({
   );
 }
 
-function NavList({ pathname, collapsed }: { pathname: string; collapsed: boolean }) {
+/**
+ * O caminho atual só existe na hora da requisição (rotas dinâmicas), então
+ * quem lê usePathname fica dentro de <Suspense>; o fallback é a mesma lista
+ * sem item ativo, e a casca continua pré-renderizada.
+ */
+function NavList({ collapsed }: { collapsed: boolean }) {
+  return (
+    <Suspense fallback={<NavListView pathname={null} collapsed={collapsed} />}>
+      <NavListWithPath collapsed={collapsed} />
+    </Suspense>
+  );
+}
+
+function NavListWithPath({ collapsed }: { collapsed: boolean }) {
+  return <NavListView pathname={usePathname()} collapsed={collapsed} />;
+}
+
+/** Chama onChange a cada troca de rota (fecha a gaveta do celular). */
+function OnNavigate({ onChange }: { onChange: () => void }) {
+  const pathname = usePathname();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => onChange(), [pathname]);
+  return null;
+}
+
+function NavListView({ pathname, collapsed }: { pathname: string | null; collapsed: boolean }) {
   return (
     <nav
       className={cn(
@@ -184,7 +206,7 @@ function NavList({ pathname, collapsed }: { pathname: string; collapsed: boolean
           <ul className="space-y-1">
             {group.items.map((item) => (
               <li key={item.href}>
-                <NavLink item={item} active={pathname.startsWith(item.href)} collapsed={collapsed} />
+                <NavLink item={item} active={pathname?.startsWith(item.href) ?? false} collapsed={collapsed} />
               </li>
             ))}
           </ul>

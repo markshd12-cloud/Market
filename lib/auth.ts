@@ -9,6 +9,8 @@ export type CurrentUser = {
   id: string;
   email: string;
   displayName: string;
+  /** Só para mostrar/esconder telas. Quem barra a escrita é o RLS (is_admin()). */
+  isAdmin: boolean;
 };
 
 /**
@@ -25,16 +27,17 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
 
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("id", user.id)
-    .maybeSingle();
+  const [{ data: profile }, { data: isAdmin, error: adminError }] = await Promise.all([
+    supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
+    supabase.rpc("is_admin"),
+  ]);
+  if (adminError) console.error("[getCurrentUser] is_admin", adminError.code, adminError.message);
 
   const email = user.email ?? "";
   return {
     id: user.id,
     email,
+    isAdmin: isAdmin === true,
     displayName:
       profile?.display_name ||
       (user.user_metadata?.display_name as string | undefined) ||

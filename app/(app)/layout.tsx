@@ -6,7 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 
 async function CurrentUserMenu() {
   const user = await getCurrentUser();
-  return <UserMenu displayName={user.displayName} email={user.email} />;
+  return <UserMenu displayName={user.displayName} email={user.email} isAdmin={user.isAdmin} />;
 }
 
 /**

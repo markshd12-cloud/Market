@@ -3,8 +3,9 @@
 import { useMemo } from "react";
 import {
   Area,
-  AreaChart,
   CartesianGrid,
+  ComposedChart,
+  Line,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -16,45 +17,40 @@ import { formatSilver } from "@/lib/utils";
 
 import { GlassTooltip } from "./chart-tooltip";
 
-export type Scenario = { key: string; label: string; dailyRate: number; color: string };
+export type ProjectionSeries = { key: string; name: string; color: string; values: number[] };
+export type ProjectionBand = { name: string; color: string; low: number[]; high: number[] };
 
 /**
- * Projeção da meta com juros compostos diários (tudo reinvestido).
- * Os cenários vêm como parâmetro: nada fixo no gráfico.
+ * Banco projetado por dia: uma linha por cenário e, opcionalmente, a faixa
+ * provável (p10–p90 do Monte Carlo) de um deles.
  */
-export function GoalProjectionChart({
-  start,
+export function ProjectionChart({
+  series,
+  band,
   goal,
-  days,
-  scenarios,
+  className = "h-72 w-full sm:h-80",
 }: {
-  start: number;
+  series: ProjectionSeries[];
+  band?: ProjectionBand | null;
   goal: number;
-  days: number;
-  scenarios: Scenario[];
+  className?: string;
 }) {
+  const days = Math.max(0, ...series.map((s) => s.values.length - 1), band ? band.low.length - 1 : 0);
   const data = useMemo(
     () =>
       Array.from({ length: days + 1 }, (_, day) => {
-        const row: Record<string, number> = { day };
-        for (const s of scenarios) row[s.key] = Math.round(start * (1 + s.dailyRate) ** day);
+        const row: Record<string, number | number[]> = { day };
+        for (const s of series) if (s.values[day] != null) row[s.key] = s.values[day];
+        if (band) row.band = [band.low[day], band.high[day]];
         return row;
       }),
-    [start, days, scenarios],
+    [days, series, band],
   );
 
   return (
-    <div className="h-72 w-full sm:h-80">
+    <div className={className}>
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 10, right: 8, left: -8, bottom: 0 }}>
-          <defs>
-            {scenarios.map((s) => (
-              <linearGradient key={s.key} id={`fill-${s.key}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={s.color} stopOpacity={0.32} />
-                <stop offset="100%" stopColor={s.color} stopOpacity={0} />
-              </linearGradient>
-            ))}
-          </defs>
+        <ComposedChart data={data} margin={{ top: 10, right: 8, left: -8, bottom: 0 }}>
           <CartesianGrid stroke="rgb(255 255 255 / 0.06)" strokeDasharray="3 6" vertical={false} />
           <XAxis
             dataKey="day"
@@ -83,19 +79,32 @@ export function GoalProjectionChart({
             cursor={{ stroke: "rgb(167 139 250 / 0.4)", strokeWidth: 1 }}
             content={<GlassTooltip labelFormatter={(d) => `Dia ${d}`} />}
           />
-          {scenarios.map((s) => (
+          {band && (
             <Area
+              type="monotone"
+              dataKey="band"
+              name={band.name}
+              stroke="none"
+              fill={band.color}
+              fillOpacity={0.14}
+              activeDot={false}
+              isAnimationActive={false}
+            />
+          )}
+          {series.map((s) => (
+            <Line
               key={s.key}
               type="monotone"
               dataKey={s.key}
-              name={s.label}
+              name={s.name}
               stroke={s.color}
               strokeWidth={2}
-              fill={`url(#fill-${s.key})`}
+              dot={false}
               activeDot={{ r: 4, strokeWidth: 0, fill: s.color }}
+              isAnimationActive={false}
             />
           ))}
-        </AreaChart>
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );

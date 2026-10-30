@@ -51,6 +51,13 @@ export async function updateSession(request: NextRequest) {
   const user = data?.claims;
   const { pathname } = request.nextUrl;
 
+  // Só redireciona navegação. Server Actions são POST na própria rota (ex.: o
+  // login em /login); redirecionar o POST quebra a resposta que o formulário
+  // espera. As actions se autorizam sozinhas e os dados ficam no RLS.
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return response;
+  }
+
   const redirectTo = (path: string) => {
     const url = request.nextUrl.clone();
     url.pathname = path;

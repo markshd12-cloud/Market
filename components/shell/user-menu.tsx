@@ -1,7 +1,8 @@
 "use client";
 
-import { ChevronsUpDown, LogOut } from "lucide-react";
+import { ChevronsUpDown, LogOut, ShieldCheck } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { signOut } from "@/app/auth/actions";
@@ -32,7 +33,15 @@ export function Avatar({ name, className }: { name: string; className?: string }
   );
 }
 
-export function UserMenu({ displayName, email }: { displayName: string; email: string }) {
+export function UserMenu({
+  displayName,
+  email,
+  isAdmin = false,
+}: {
+  displayName: string;
+  email: string;
+  isAdmin?: boolean;
+}) {
   const { collapsed } = useShell();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -52,12 +61,26 @@ export function UserMenu({ displayName, email }: { displayName: string; email: s
   }, [open]);
 
   return (
-    <div ref={ref} className="relative">
+    <div className="space-y-2">
+      {isAdmin && (
+        <Link
+          href="/admin"
+          title="Administração"
+          className={cn(
+            "group/admin flex h-10 items-center gap-3 rounded-xl border border-violet/30 bg-violet/10 text-sm text-violet-soft transition-colors hover:border-violet/50 hover:bg-violet/20",
+            collapsed ? "justify-center" : "px-3",
+          )}
+        >
+          <ShieldCheck className="size-[18px] shrink-0" aria-hidden />
+          {!collapsed && <span className="truncate">Administração</span>}
+        </Link>
+      )}
+    <div ref={ref} className={cn("relative flex gap-1.5", collapsed ? "flex-col items-center" : "items-center")}>
       <button
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          "flex w-full items-center gap-3 rounded-xl p-1.5 text-left transition-colors hover:bg-white/[0.05]",
-          collapsed && "justify-center",
+          "flex min-w-0 items-center gap-3 rounded-xl p-1.5 text-left transition-colors hover:bg-white/[0.05]",
+          collapsed ? "justify-center" : "flex-1",
         )}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -73,6 +96,18 @@ export function UserMenu({ displayName, email }: { displayName: string; email: s
           </>
         )}
       </button>
+
+      {/* Sair sempre visível (o menu fica para Administração e afins). */}
+      <form action={signOut}>
+        <button
+          type="submit"
+          title="Sair"
+          aria-label="Sair"
+          className="grid size-9 place-items-center rounded-xl border border-glass-border text-muted transition-colors hover:border-danger/40 hover:bg-danger/10 hover:text-rose-300"
+        >
+          <LogOut className="size-4" aria-hidden />
+        </button>
+      </form>
 
       <AnimatePresence>
         {open && (
@@ -92,6 +127,16 @@ export function UserMenu({ displayName, email }: { displayName: string; email: s
               <p className="truncate text-xs text-muted">{email}</p>
             </div>
             <div className="my-1 h-px bg-glass-border" />
+            {isAdmin && (
+              <Link
+                href="/admin"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-foreground/90 transition-colors hover:bg-white/[0.05]"
+              >
+                <ShieldCheck className="size-4 text-violet-soft" aria-hidden /> Administração
+              </Link>
+            )}
             <form action={signOut}>
               <button
                 type="submit"
@@ -104,6 +149,7 @@ export function UserMenu({ displayName, email }: { displayName: string; email: s
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
     </div>
   );
 }

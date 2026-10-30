@@ -1,12 +1,16 @@
 import {
+  BookOpen,
   ChartSpline,
+  Crosshair,
   Factory,
   LayoutDashboard,
   Radar,
   Route,
+  ScanLine,
   Settings,
   Ship,
   Sprout,
+  UserRound,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -29,8 +33,11 @@ export const NAV: NavGroup[] = [
   {
     label: "Mercado",
     items: [
-      { label: "Rotas", href: "/rotas", icon: Route, soon: true },
-      { label: "Black Market", href: "/black-market", icon: Ship, soon: true },
+      { label: "Catálogo", href: "/catalogo", icon: BookOpen },
+      { label: "Rotas", href: "/rotas", icon: Route },
+      { label: "Black Market", href: "/black-market", icon: Ship },
+      { label: "Meu mercado", href: "/meu-mercado", icon: Crosshair },
+      { label: "Captura", href: "/captura", icon: ScanLine },
       { label: "Reconferências", href: "/reconferencias", icon: Radar, soon: true },
     ],
   },
@@ -44,12 +51,15 @@ export const NAV: NavGroup[] = [
   {
     label: "Finanças",
     items: [
-      { label: "Operações", href: "/operacoes", icon: Wallet, soon: true },
-      { label: "Projeções", href: "/projecoes", icon: ChartSpline, soon: true },
+      { label: "Operações", href: "/operacoes", icon: Wallet },
+      { label: "Projeções", href: "/projecoes", icon: ChartSpline },
     ],
   },
   {
     label: "Conta",
-    items: [{ label: "Configurações", href: "/configuracoes", icon: Settings, soon: true }],
+    items: [
+      { label: "Personagens", href: "/personagens", icon: UserRound },
+      { label: "Configurações", href: "/configuracoes", icon: Settings, soon: true },
+    ],
   },
 ];

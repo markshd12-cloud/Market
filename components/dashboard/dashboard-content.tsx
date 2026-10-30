@@ -1,31 +1,39 @@
-import { CircleDashed, CircleDot, Gauge, Radio, Target, TrendingUp, Wallet } from "lucide-react";
+import { Check, CircleDashed, CircleDot } from "lucide-react";
 
-import { GoalProjectionChart, type Scenario } from "@/components/charts/goal-projection-chart";
 import { CardTitle, GlassCard } from "@/components/ui/card";
-import { cn, formatSilver } from "@/lib/utils";
-
-// Premissas do plano (docs 05 e 09). Viram configuração por personagem na etapa 6.
-const PLAN = { start: 20_000_000, goal: 100_000_000, days: 20 };
-const SCENARIOS: Scenario[] = [
-  { key: "pess", label: "8% / dia", dailyRate: 0.08, color: "#22d3ee" },
-  { key: "base", label: "10% / dia", dailyRate: 0.1, color: "#a78bfa" },
-  { key: "otim", label: "12% / dia", dailyRate: 0.12, color: "#34d399" },
-];
-
-const requiredRate = (PLAN.goal / PLAN.start) ** (1 / PLAN.days) - 1;
-const daysToGoal = (rate: number) => Math.ceil(Math.log(PLAN.goal / PLAN.start) / Math.log(1 + rate));
+import { cn } from "@/lib/utils";
 
 const ROADMAP = [
-  { step: "Base do site e login", status: "now" },
-  { step: "Catálogo de itens e constantes", status: "next" },
-  { step: "Coletor de preços (Supabase)", status: "next" },
-  { step: "Motor de rotas e Black Market", status: "next" },
-  { step: "Perfil, operações e meta", status: "next" },
-  { step: "Projeções e cenários", status: "next" },
+  { step: "Base do site e login", status: "done" },
+  { step: "Catálogo de itens e constantes", status: "done" },
+  { step: "Coletor de preços (Supabase)", status: "done" },
+  { step: "Motor de rotas e Black Market", status: "done" },
+  { step: "Perfil, operações e meta", status: "done" },
+  { step: "Projeções e cenários", status: "done" },
+  { step: "Captura própria (Data Client)", status: "now" },
 ] as const;
 
-/** Corpo do dashboard. A saudação chega pronta (o page.tsx a envolve em <Suspense>). */
-export function DashboardContent({ greeting }: { greeting: React.ReactNode }) {
+/**
+ * Corpo do dashboard. Tudo que lê o banco chega como slot já envolvido em
+ * <Suspense> pelo page.tsx: a moldura aparece na hora.
+ */
+export function DashboardContent({
+  greeting,
+  goalKpis,
+  bank,
+  collector,
+  projection,
+}: {
+  greeting: React.ReactNode;
+  /** Meta e ritmo necessário (do personagem principal). */
+  goalKpis: React.ReactNode;
+  /** Banco do personagem principal. */
+  bank: React.ReactNode;
+  /** Indicador do coletor. */
+  collector: React.ReactNode;
+  /** Cartão do gráfico de projeção. */
+  projection: React.ReactNode;
+}) {
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -43,44 +51,16 @@ export function DashboardContent({ greeting }: { greeting: React.ReactNode }) {
       </header>
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi icon={<Target className="size-4" />} label="Meta" value={formatSilver(PLAN.goal)} hint={`em ${PLAN.days} dias`} />
-        <Kpi
-          icon={<Gauge className="size-4" />}
-          label="Ritmo necessário"
-          value={`${(requiredRate * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`}
-          hint={`por dia, partindo de ${formatSilver(PLAN.start)}`}
-        />
-        <Kpi icon={<Wallet className="size-4" />} label="Banco atual" value="—" hint="registro de operações na etapa 5" muted />
-        <Kpi icon={<Radio className="size-4" />} label="Coletor" value="Offline" hint="liga na etapa 3" muted />
+        {goalKpis}
+        {bank}
+        {collector}
       </section>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <GlassCard neon className="p-5 sm:p-6 xl:col-span-2">
-          <CardTitle
-            icon={<TrendingUp className="size-4" />}
-            title="Projeção da meta"
-            subtitle="Simulação com juros compostos diários, sem perdas. Passe o mouse para ver cada dia."
-          />
-          <div className="mt-5">
-            <GoalProjectionChart start={PLAN.start} goal={PLAN.goal} days={PLAN.days} scenarios={SCENARIOS} />
-          </div>
-          <div className="mt-4 grid grid-cols-3 gap-3">
-            {SCENARIOS.map((s) => (
-              <div key={s.key} className="rounded-xl border border-glass-border bg-white/[0.02] p-3">
-                <p className="flex items-center gap-2 text-xs text-muted">
-                  <span className="size-2 rounded-full" style={{ background: s.color }} />
-                  {s.label}
-                </p>
-                <p className="mt-1 font-mono text-sm">
-                  {daysToGoal(s.dailyRate)} <span className="text-muted">dias</span>
-                </p>
-              </div>
-            ))}
-          </div>
-        </GlassCard>
+        <div className="xl:col-span-2">{projection}</div>
 
         <GlassCard className="p-5 sm:p-6">
-          <CardTitle icon={<CircleDot className="size-4" />} title="Construção" subtitle="Marco 1 · alertas de rota" />
+          <CardTitle icon={<CircleDot className="size-4" />} title="Construção" subtitle="Roteiro do NYX Market" />
           <ol className="mt-5 space-y-3">
             {ROADMAP.map(({ step, status }, i) => (
               <li key={step} className="flex items-center gap-3">
@@ -89,12 +69,27 @@ export function DashboardContent({ greeting }: { greeting: React.ReactNode }) {
                     "grid size-7 shrink-0 place-items-center rounded-lg border font-mono text-[0.65rem]",
                     status === "now"
                       ? "border-violet/50 bg-violet/15 text-violet-soft shadow-[0_0_14px_-2px_rgb(139_92_246/0.7)]"
-                      : "border-glass-border text-subtle",
+                      : status === "done"
+                        ? "border-success/40 bg-success/10 text-emerald-300"
+                        : "border-glass-border text-subtle",
                   )}
                 >
-                  {status === "now" ? <CircleDashed className="size-3.5 animate-spin [animation-duration:3s]" /> : i + 1}
+                  {status === "now" ? (
+                    <CircleDashed className="size-3.5 animate-spin [animation-duration:3s]" />
+                  ) : status === "done" ? (
+                    <Check className="size-3.5" />
+                  ) : (
+                    i + 1
+                  )}
                 </span>
-                <span className={cn("text-sm", status === "now" ? "text-foreground" : "text-muted")}>{step}</span>
+                <span
+                  className={cn(
+                    "text-sm",
+                    status === "now" ? "text-foreground" : status === "done" ? "text-muted line-through decoration-white/20" : "text-muted",
+                  )}
+                >
+                  {step}
+                </span>
               </li>
             ))}
           </ol>
@@ -104,7 +99,7 @@ export function DashboardContent({ greeting }: { greeting: React.ReactNode }) {
   );
 }
 
-function Kpi({
+export function Kpi({
   icon,
   label,
   value,

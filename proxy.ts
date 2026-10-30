@@ -8,7 +8,8 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Tudo, exceto estáticos, otimização de imagem e arquivos de imagem.
-    "/((?!_next/static|_next/image|favicon.ico|icon.svg|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    // Tudo, exceto estáticos, imagens e a captura do Data Client (sem sessão:
+    // a chave pessoal no caminho é conferida no banco).
+    "/((?!_next/static|_next/image|api/capture|favicon.ico|icon.svg|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

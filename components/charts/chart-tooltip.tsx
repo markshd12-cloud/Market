@@ -2,7 +2,13 @@
 
 import { formatSilver } from "@/lib/utils";
 
-type Entry = { name?: string | number; value?: number | string; color?: string; dataKey?: string | number };
+type Entry = {
+  name?: string | number;
+  /** Área de faixa (Recharts) manda [mín, máx]. */
+  value?: number | string | readonly number[];
+  color?: string;
+  dataKey?: string | number;
+};
 
 /** Tooltip de vidro padrão dos gráficos (Recharts `content`). */
 export function GlassTooltip({
@@ -35,7 +41,11 @@ export function GlassTooltip({
               {entry.name}
             </span>
             <span className="font-mono font-medium text-foreground">
-              {typeof entry.value === "number" ? valueFormatter(entry.value) : entry.value}
+              {typeof entry.value === "number"
+                ? valueFormatter(entry.value)
+                : Array.isArray(entry.value)
+                  ? entry.value.map((v) => valueFormatter(v)).join(" – ")
+                  : entry.value}
             </span>
           </li>
         ))}
